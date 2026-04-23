@@ -1,0 +1,24 @@
+# Xcode
+## User settings
+xcuserdata/
+*.xcuserstate
+
+## Build artifacts
+build/
+DerivedData/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+## Swift Package Manager
+.swiftpm/
+Packages/
+Package.pins
+Package.resolved
+.build/
+
+## CocoaPods (not used here but standard)
+Pods/
+
+## macOS
+.DS_Store
