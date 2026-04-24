@@ -16,12 +16,25 @@ struct HomeView: View {
     @State private var filterID: String? = "Expeditions"
     private let filters = ["All", "1 Day", "1+ Day", "Expeditions"]
 
+    /// Stored so the vertical scroll can snap to it on first appear — SwiftUI's
+    /// `.scrollPosition(id:)` doesn't reliably honour its initial @State value
+    /// during the first layout pass (same pattern as the filters row below).
+    private let initialID: Expedition.ID
+
+    /// True when the currently centered card is the Northern Lights
+    /// expedition (marked via `hasAuroraBackdrop`). Drives the screen-wide
+    /// aurora backdrop fade in/out.
+    private var auroraActive: Bool {
+        expeditions.first(where: { $0.id == scrolledID })?.hasAuroraBackdrop == true
+    }
+
     init(expeditions: [Expedition],
          initialID: Expedition.ID,
          namespace: Namespace.ID,
          selectedExpID: Expedition.ID? = nil,
          onCardTap: @escaping (Expedition) -> Void) {
         self.expeditions = expeditions
+        self.initialID = initialID
         self.namespace = namespace
         self.selectedExpID = selectedExpID
         self.onCardTap = onCardTap
@@ -49,7 +62,11 @@ struct HomeView: View {
                 // top/bottom bars are drawn ABOVE the scroll, masking the
                 // peek with their gradient fades.
                 ScrollView(.vertical, showsIndicators: false) {
-                    LazyVStack(spacing: 24) {
+                    // Eager VStack (3 items total) — LazyVStack would defer
+                    // rendering of the Northern Lights card until it scrolls
+                    // into view, which made `.scrollPosition(id:)` fail to
+                    // snap to the initial @State value on launch.
+                    VStack(spacing: 24) {
                         ForEach(expeditions) { exp in
                             // swiftui-lab hero pattern: replace the source card
                             // with an invisible placeholder of identical size
@@ -74,6 +91,42 @@ struct HomeView: View {
                 // без "тягучего" скролла мимо нескольких ячеек.
                 .scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne))
                 .scrollPosition(id: $scrolledID, anchor: cardAnchor)
+                .task {
+                    // SwiftUI `.scrollPosition(id:)` doesn't reliably snap to
+                    // the initial @State value on first layout. We wait one
+                    // run-loop for the ScrollView to settle, then toggle
+                    // scrolledID through nil so the re-assignment isn't a
+                    // no-op and SwiftUI re-applies the anchor position.
+                    try? await Task.sleep(for: .milliseconds(200))
+                    scrolledID = nil
+                    try? await Task.sleep(for: .milliseconds(16))
+                    scrolledID = initialID
+                }
+
+                // Aurora sky — screen-wide backdrop, visible only when the
+                // Northern Lights expedition is the centered card. Sits
+                // ABOVE the scroll (so bands read across full width, incl.
+                // over the card and around it via the shader's transparent
+                // gaps) but BELOW the top bar (filter chips stay readable).
+                // Top-aligned VStack + Spacer caps the vertical coverage to
+                // ~55% of screen height, matching the marked reference area.
+                VStack(spacing: 0) {
+                    // Wrap aurora in a Color.clear container sized to the
+                    // screen so the ZStack / ScrollView don't inherit the
+                    // oversized width. The overlay itself may extend 40pt
+                    // past each edge without affecting parent layout.
+                    Color.clear
+                        .frame(height: geo.size.height * 0.55)
+                        .overlay {
+                            AuroraSkyView()
+                                .frame(width: geo.size.width + 80)
+                                .offset(x: -40)
+                        }
+                    Spacer(minLength: 0)
+                }
+                .allowsHitTesting(false)
+                .opacity(auroraActive ? 1 : 0)
+                .animation(.easeInOut(duration: 0.5), value: scrolledID)
 
                 // Top bar (status bar zone + navigation) — pinned to top, ignores top safe area
                 topBar(safeTop: geo.safeAreaInsets.top)

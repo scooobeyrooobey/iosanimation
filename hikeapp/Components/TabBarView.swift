@@ -58,13 +58,15 @@ struct TabBarView: View {
             selected = tab
         } label: {
             VStack(spacing: 1) {
-                Image(tab.iconName)
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
-                    .frame(height: 28)
-                    .foregroundStyle(isActive ? AppColor.accent : AppColor.textWhite)
+                profileIconWrapper(for: tab) {
+                    Image(tab.iconName)
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                        .frame(height: 28)
+                        .foregroundStyle(isActive ? AppColor.accent : AppColor.textWhite)
+                }
                 Text(tab.rawValue)
                     .font(.tabLabel())
                     .foregroundStyle(isActive ? AppColor.accent : AppColor.textWhite)
@@ -80,5 +82,22 @@ struct TabBarView: View {
             )
         }
         .buttonStyle(PressableButtonStyle(pressedScale: 0.9))
+    }
+
+    /// Wraps the Profile tab icon with (a) an anchor preference so the drop
+    /// coordinator knows where to land, and (b) the splash-bounce modifier.
+    /// All other tabs render untouched.
+    @ViewBuilder
+    private func profileIconWrapper<Content: View>(
+        for tab: AppTab,
+        @ViewBuilder _ content: () -> Content
+    ) -> some View {
+        if tab == .profile {
+            content()
+                .profileTabSplash()
+                .reportAnchor(ProfileTabAnchorKey.self)
+        } else {
+            content()
+        }
     }
 }

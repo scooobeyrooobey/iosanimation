@@ -25,6 +25,7 @@ struct ContentView: View {
     @State private var selectedExp: Expedition?
     @State private var tab: AppTab = .explore
     @Namespace private var heroNS
+    @State private var dropCoordinator = BookmarkDropCoordinator()
 
     private let expeditions: [Expedition] = Expedition.samples
 
@@ -61,6 +62,14 @@ struct ContentView: View {
                 .transition(.opacity)
             }
 
+            // Bookmark drop overlay — sandwiched between the card (zIndex 3)
+            // and the tab bar (zIndex 4). The tab bar on top means the drop
+            // visually "enters" the glass capsule at landing rather than
+            // sitting on top of it.
+            BookmarkDrop()
+                .allowsHitTesting(false)
+                .zIndex(3.5)
+
             // Persistent tab bar — its GlassEffectContainer lives outside the
             // hero layers so we don't rebuild it during the morph.
             VStack(spacing: 0) {
@@ -68,6 +77,14 @@ struct ContentView: View {
                 TabBarView(selected: $tab)
             }
             .zIndex(4)
+        }
+        .coordinateSpace(name: "root")
+        .environment(dropCoordinator)
+        .onPreferenceChange(BookmarkAnchorKey.self) { point in
+            Task { @MainActor in dropCoordinator.bookmarkAnchor = point }
+        }
+        .onPreferenceChange(ProfileTabAnchorKey.self) { point in
+            Task { @MainActor in dropCoordinator.profileAnchor = point }
         }
     }
 }

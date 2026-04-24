@@ -36,6 +36,13 @@ struct Expedition: Identifiable, Equatable {
 }
 
 extension Expedition {
+    /// Opt-in aurora backdrop — true only for the Northern Lights itinerary.
+    /// HomeView reads this to gate the procedural aurora overlay.
+    var hasAuroraBackdrop: Bool {
+        let t = title.lowercased()
+        return t.contains("northern lights") || t.contains("aurora")
+    }
+
     static let sample = Expedition(
         title: "Chase the Northern Lights Express",
         meta: "11 days, 24 Nov",

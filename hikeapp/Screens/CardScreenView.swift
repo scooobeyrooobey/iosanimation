@@ -6,6 +6,7 @@ struct CardScreenView: View {
     var namespace: Namespace.ID
     var onBack: () -> Void
 
+    @Environment(BookmarkDropCoordinator.self) private var dropCoordinator
     @State private var isBookmarked = false
     // Individual controls are staggered independently, so each button owns
     // its own offset/opacity pair.
@@ -168,18 +169,48 @@ struct CardScreenView: View {
                     .offset(y: accentOffset)
                     .opacity(accentOpacity)
 
-                    LiquidGlassButton(style: .icon, action: { isBookmarked.toggle() }) {
+                    LiquidGlassButton(style: .icon, action: handleBookmarkTap) {
                         Image(isBookmarked ? "IconBookmarkCheck" : "IconBookmark")
                             .renderingMode(.template)
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
+                            // Crossfade with the drop sprite during birth —
+                            // without the explicit animation the icon snaps
+                            // to zero, which reads as a "pop" right as the
+                            // drop begins to emerge.
+                            .opacity(dropCoordinator.isAnimating ? 0 : 1)
+                            .animation(
+                                .easeInOut(duration: 0.2),
+                                value: dropCoordinator.isAnimating
+                            )
                     }
+                    .reportAnchor(BookmarkAnchorKey.self)
                     .offset(y: iconOffset)
                     .opacity(iconOpacity)
+                    .disabled(dropCoordinator.isAnimating)
                 }
             }
             .padding(.vertical, 12)
+        }
+    }
+
+    // Bookmark tap handler.
+    // - Already bookmarked → instant toggle off (no drop animation for removal).
+    // - Not bookmarked → trigger the drop flight; the filled state is set when
+    //   the splash begins (coordinator callback), so the icon flips at the
+    //   exact moment the drop "arrives" visually.
+    // - Mid-flight taps are swallowed by both `.disabled(...)` and the
+    //   coordinator's internal guard.
+    private func handleBookmarkTap() {
+        if isBookmarked {
+            isBookmarked = false
+            return
+        }
+        dropCoordinator.trigger {
+            withAnimation(.spring(duration: 0.22, bounce: 0.25)) {
+                isBookmarked = true
+            }
         }
     }
 
