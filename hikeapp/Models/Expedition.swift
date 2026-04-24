@@ -86,9 +86,9 @@ extension Expedition {
             difficulty: 2,
             shortDescription: "Rise before dawn to summit Toubkal, then descend through Berber villages tucked into red-stone valleys",
             longDescription: sample.longDescription,
-            heroImage: "card1",
-            sideImageRight: "card2",
-            sideImageLeft: "card3"
+            heroImage: "atlas1",
+            sideImageRight: "atlas2",
+            sideImageLeft: "atlas3"
         )
     ]
 }
