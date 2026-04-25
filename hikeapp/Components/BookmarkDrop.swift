@@ -69,7 +69,7 @@ private struct DropState {
         case .hover:
             bezierT = apexT
         case .fall:
-            let k = CGFloat(DropEase.inQuart(localT))
+            let k = CGFloat(DropEase.inQuad(localT))
             bezierT = apexT + (1 - apexT) * k
         case .splash:
             bezierT = 1

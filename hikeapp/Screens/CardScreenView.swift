@@ -18,6 +18,13 @@ struct CardScreenView: View {
     @State private var backOpacity: CGFloat = 0
     @State private var panelOffset: CGFloat = 40
     @State private var panelOpacity: CGFloat = 0
+    /// Clip-shape cornerRadius on the background gradient. Starts at the
+    /// card's corner (24pt) so the hero morph begins flush with the Home
+    /// card, then animates up to the device's physical display corner
+    /// (~55pt) alongside the matched-geometry frame morph — the rounded
+    /// card "inflates" into the rounded screen instead of snapping to
+    /// square corners mid-transition.
+    @State private var bgCornerRadius: CGFloat = Metrics.cardCornerRadius
 
     var body: some View {
         ZStack {
@@ -25,8 +32,15 @@ struct CardScreenView: View {
             // simultaneously flips `heroIsSource` OFF (via isCoveredByCard).
             // Source ownership passes here, and SwiftUI animates the rendered
             // frame from Home's previous source position to this layout.
+            //
+            // clipShape uses an AnimatableRoundedRect (animatableData =
+            // cornerRadius) so the corner radius interpolates between 24pt
+            // and 55pt when `bgCornerRadius` is changed inside withAnimation.
+            // It sits BEFORE matchedGeometryEffect so the shape is clipped
+            // to whatever frame matched-geometry is currently interpolating.
             LinearGradient(colors: [AppColor.cardBGTop, AppColor.cardBGBottom],
                            startPoint: .top, endPoint: .bottom)
+                .clipShape(AnimatableRoundedRect(cornerRadius: bgCornerRadius))
                 .matchedGeometryEffect(
                     id: "card-\(expedition.id.uuidString)-bg",
                     in: namespace,
@@ -62,9 +76,13 @@ struct CardScreenView: View {
                     .frame(height: 204)
                     .padding(.top, 16)
 
+                // No horizontal padding — TightTitleLabel renders at its
+                // full `Metrics.titleMaxWidth` (~364pt) and needs the full
+                // screen width to breathe. Meta/dots/shortDesc/buttons have
+                // their own intrinsic widths and center themselves inside
+                // the parent VStack without extra padding.
                 textBlock
-                    .padding(.horizontal, 32)
-                    .padding(.top, 16)
+                    .padding(.top, 32)
                     .padding(.bottom, 8)
 
                 // Bottom panel — scrolls internally; page hero above does not.
@@ -99,7 +117,15 @@ struct CardScreenView: View {
                 .opacity(panelOpacity)
             }
         }
-        .onAppear { playEnterAnimation() }
+        .onAppear {
+            playEnterAnimation()
+            // Animate the clip-shape corner radius up to the device's
+            // physical display corner. Runs on the same spring as the hero
+            // morph so frame + corner interpolate in lock-step.
+            withAnimation(HeroTransition.spring) {
+                bgCornerRadius = Metrics.deviceCornerRadius
+            }
+        }
     }
 
     private var textBlock: some View {
@@ -121,6 +147,17 @@ struct CardScreenView: View {
                     // intrinsic frame on both sides.
                     maxWidth: Metrics.titleMaxWidth
                 )
+                // Explicit width must match Home exactly so matchedGeometry
+                // interpolates identical frames (position + size) and the
+                // title doesn't slide horizontally during the morph.
+                //
+                // On Home, `ExpeditionCard` places the title inside a VStack
+                // with `.padding(.horizontal, cardTextHPadding)` — proposed
+                // width = `cardWidth - 2 * cardTextHPadding` = 295pt.
+                // Mirroring that here keeps both sides at 295pt, and on a
+                // 402pt screen the title has 53pt breathing room per side
+                // so nothing gets clipped.
+                .frame(width: Metrics.cardWidth - 2 * Metrics.cardTextHPadding)
                 .fixedSize(horizontal: false, vertical: true)
                 .shadow(color: Color(hex: 0xF0D5C2).opacity(0.5), radius: 50)
                 .matchedGeometryEffect(

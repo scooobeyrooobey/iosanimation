@@ -98,12 +98,15 @@ struct DropTrajectory {
 /// Single source of truth for the drop's 6-phase schedule.
 /// All values are in seconds from the start of the flight.
 enum DropTiming {
-    // Doubled from the original pass for a slower, more luxurious feel.
+    // Keep the launch (birth + rise) unchanged — user likes the fast takeoff.
+    // Middle and end were compressed: hover removed entirely, fall nearly
+    // halved, splash tightened so the flight no longer feels like slow-motion
+    // after the apex.
     static let birth:  Double = 0.24
     static let rise:   Double = 0.44
-    static let hover:  Double = 0.05
-    static let fall:   Double = 0.96
-    static let splash: Double = 0.36
+    static let hover:  Double = 0.00
+    static let fall:   Double = 0.50
+    static let splash: Double = 0.28
 
     static var total: Double { birth + rise + hover + fall + splash }
 
@@ -174,6 +177,14 @@ enum DropEase {
     static func inQuart(_ t: Double) -> Double {
         let c = max(0, min(t, 1))
         return c * c * c * c
+    }
+
+    /// Ease-in quad — matches real gravity (s = ½·g·t²). Less "slow-motion"
+    /// feel at the apex than inQuart while still preserving C¹ continuity
+    /// with an ease-out rise (derivative is 0 at t=0).
+    static func inQuad(_ t: Double) -> Double {
+        let c = max(0, min(t, 1))
+        return c * c
     }
 
     /// Spring-like overshoot for splash bounce.

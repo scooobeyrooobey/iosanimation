@@ -23,3 +23,25 @@ enum HeroTransition {
     static let delayBack:   Double = 0.12  // Back arrow (slides right→left)
     static let delayBottom: Double = 0.15  // Long-description panel
 }
+
+/// Continuous-corner rectangle with an animatable `cornerRadius`. Plain
+/// `RoundedRectangle` only exposes `cornerSize` through `AnimatablePair`,
+/// which doesn't reliably interpolate when the shape is used through
+/// `.clipShape(...)` — wrapping it in a custom `Shape` with scalar
+/// `animatableData` makes the radius a first-class animated value.
+///
+/// Used by `CardScreenView` to morph the card background's corner from the
+/// card radius (24pt) up to the device's physical display corner (55pt)
+/// alongside the `matchedGeometryEffect` frame morph.
+struct AnimatableRoundedRect: Shape {
+    var cornerRadius: CGFloat
+
+    var animatableData: CGFloat {
+        get { cornerRadius }
+        set { cornerRadius = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        Path(roundedRect: rect, cornerRadius: cornerRadius, style: .continuous)
+    }
+}

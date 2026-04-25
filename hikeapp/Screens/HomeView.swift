@@ -120,7 +120,7 @@ struct HomeView: View {
                         .overlay {
                             AuroraSkyView()
                                 .frame(width: geo.size.width + 80)
-                                .offset(x: -40)
+                                .offset(x: -40, y: -20)
                         }
                     Spacer(minLength: 0)
                 }

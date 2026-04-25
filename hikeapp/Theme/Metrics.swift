@@ -5,6 +5,10 @@ enum Metrics {
     static let cardWidth: CGFloat = 329
     static let cardHeight: CGFloat = 510
     static let cardCornerRadius: CGFloat = 24
+    /// Physical display corner radius for iPhone 16/17 Pro (53–55pt class).
+    /// Used as the hero morph endpoint so the card's background clip meets the
+    /// device's own screen corners flush, instead of revealing square corners.
+    static let deviceCornerRadius: CGFloat = 55
     static let cardHPadding: CGFloat = 32
     /// Horizontal padding for the text block (title/meta/dots/description).
     /// 15pt narrower per side than `cardHPadding` → text layer is 30pt wider
